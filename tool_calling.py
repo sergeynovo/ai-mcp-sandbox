@@ -27,3 +27,65 @@ PROMPT = "What is the current price of Bitcoin?"
 chat = client.chats.create(model=model)
 response = chat.send_message(PROMPT)
 print(response.text)
+
+print(response)
+
+# Note: US users may need api.binance.us (binance.com is geo-blocked in the US)
+url = f"https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
+response = requests.get(url)
+data = response.json()
+print(data)
+
+# Define the function
+def get_crypto_price(symbol: str) -> Dict[str, Any]:
+    """
+    Get the current price of a cryptocurrency from Binance API
+    """
+    # Note: US users may need api.binance.us (binance.com is geo-blocked in the US)
+    url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+    response = requests.get(url)
+    data = response.json()
+    return float(data["price"])
+
+price = get_crypto_price("BTCUSDT")
+print(f"BTC Price in USDT: {price}")
+
+tools = [
+    {
+        "function_declarations": [
+            {
+                "name": "get_crypto_price",
+                "description": "Get cryptocurrency price in USDT from Binance",
+                "parameters": {
+                    "type": "object", 
+                    "properties": {
+                        "symbol": {
+                            "type": "string",
+                            "description": "The cryptocurrency trading pair symbol (e.g., BTCUSDT, ETHUSDT). \
+                                            The symbol for Bitcoin is BTCUSDT. \
+                                            The symbol for Ethereum is ETHUSDT."
+                        }
+                    },
+                    "required": ["symbol"]
+                }
+            }
+        ]
+    }
+]
+
+PROMPT = "What is the current price of Bitcoin?"
+chat = client.chats.create(model=model, config={"tools": tools})
+response = chat.send_message(PROMPT)
+print(response)
+
+price = get_crypto_price("BTCUSDT")
+
+final_response = chat.send_message(
+    types.Part.from_function_response(
+        name="get_crypto_price",
+        response={"price": price},
+    )
+)
+print(final_response)
+
+print(final_response.text)
